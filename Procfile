@@ -1,2 +1,1 @@
-web: yarn start:react
-api: yarn start:api
+web: yarn start:production

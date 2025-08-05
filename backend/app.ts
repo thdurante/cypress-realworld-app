@@ -24,12 +24,16 @@ import bankTransferRoutes from "./banktransfer-routes";
 import testDataRoutes from "./testdata-routes";
 import { checkAuth0Jwt, verifyOktaToken, checkCognitoJwt, checkGoogleJwt } from "./helpers";
 import resolvers from "./graphql/resolvers";
-import { frontendPort, getBackendPort } from "../src/utils/portUtils";
 
 require("dotenv").config();
 
+// Heroku port configuration
+const PORT = process.env.PORT || 3001;
+
 const corsOption = {
-  origin: `http://localhost:${frontendPort}`,
+  origin: process.env.NODE_ENV === "production" 
+    ? [process.env.FRONTEND_URL || "https://your-app-name.herokuapp.com", "https://your-app-name.herokuapp.com"]
+    : [`http://localhost:${process.env.PORT || 3000}`, `http://localhost:3000`],
   credentials: true,
 };
 
@@ -95,9 +99,6 @@ if (process.env.VITE_GOOGLE) {
   app.use(checkGoogleJwt);
 }
 
-app.get("/", (req, res) => {
-  res.send("Cypress Realworld App - backend");
-});
 app.use("/graphql", gqlPlaygroundRoutes);
 app.use(
   "/graphql",
@@ -117,8 +118,23 @@ app.use("/comments", commentRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/bankTransfers", bankTransferRoutes);
 
-app.use(express.static(join(__dirname, "../public")));
+// Serve static files from the React build
+const buildPath = join(__dirname, "../build");
+console.log(`Serving static files from: ${buildPath}`);
+app.use(express.static(buildPath));
 
-getBackendPort().then((port) => {
-  app.listen(port);
+// Serve React app for any non-API routes (must be last)
+app.get("*", (req, res) => {
+  const indexPath = join(__dirname, "../build/index.html");
+  console.log(`Serving React app from: ${indexPath}`);
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error(`Error serving React app: ${err.message}`);
+      res.status(500).send("Error loading React app");
+    }
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

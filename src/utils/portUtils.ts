@@ -4,6 +4,16 @@ import detect from "detect-port";
 export const frontendPort = process.env.PORT;
 export const backendPort = process.env.VITE_BACKEND_PORT;
 
+// Get the API base URL for both development and production
+export const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV === "production") {
+    // In production, use relative URLs since frontend and backend are on the same domain
+    return "";
+  }
+  // In development, use localhost with the backend port
+  return `http://localhost:${backendPort}`;
+};
+
 export const getBackendPort = async () => {
   return detect(Number(backendPort))
     .then((_port) => {
